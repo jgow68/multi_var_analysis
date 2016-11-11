@@ -1,0 +1,73 @@
+---
+title: "multi_var_analy"
+author: "Lxy"
+date: "November 11, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Factor analysis
+
+[^1]: 
+* Johnson RA & Wichern DW, Applied Multivariate Statistical Analysis, 6ed, Pearson,. Chapter 9
+* Rencher AC & Christensen WF, Methods of Multivariate Analysis, 3ed, Wiley. Ch 13.
+
+Consider random vector $\underline{X}^{T} = (X_{1}, ... , X_{p}) \in \mathbb{Z}$ where $E(\underline{X}) = \underline{\mu}_{p \times 1}$ and $Var{\underline{X}} = \Sigma_{p \times p}$
+
+$$ X_{j} - \mu_{j} = \lambda_{j1}F_{1} + ... + \lambda_{jm}F_{m} + \epsilon_{j}, j = 1, ..., p $$
+
+*F* are common factors and $\epsilon$ are specific factors. Both are random.
+
+Factor model in matrix form:
+$$ \mathbf{\underline{X} - \underline{\mu} = \Lambda\underline{F} + \underline{U}} $$
+$$ \underline{\mu} = mean\ vector $$
+$$ \Lambda = (p \times p)\ loadings $$
+$$ \underline{F} = (m \times 1)\ common\ factors,\ E(\underline{F}) = \underline{0},\ Var(\underline{F}) = I_{m} $$
+$$ \underline{U} = (p \times 1)\ specific\ factors,\ E(\underline{U}) = \underline{0},\ Var(\underline{U}) = \Psi = diag(\psi_{1}, \dots , \psi_{p}) $$
+$$ Cov(\underline{F}, \underline{U}) = 0_{m \times p} $$
+
+Then we have $Var(\underline{X}) = \Sigma = (\sigma_{jj})_{p \times p}= \Lambda\Lambda^{T} + \Psi$ which is called the **factor analysis equations**.
+
+$$ \sigma_{jj} = \sum_{k=1}^m \lambda_{jk}^{2} + \psi_{j} = h_{j}^{2} + \psi_{j} $$
+$$ h_{j}^{2} is called the j-th communality and \psi_{j} is the specific variance of uniqueness $$
+
+
+
+
+
+R does not have factor loading function utilising principal component, hence we introduce the function below.
+
+```{r function: factor loading with principal component method}
+
+# https://stat.ethz.ch/pipermail/r-help/2002-August/023929.html 
+factanalpc <- function(xmat, factors=NULL, cor=TRUE) {
+  prc <- princomp ( covmat = xmat ,cor = cor )
+  eig <- prc$sdev^2
+  if (is.null(factors)) factors <- sum ( eig >= 1 ) 
+  loadings <- prc$loadings [ , 1:factors ]
+  coefficients <- loadings [ , 1:factors ] %*% diag ( prc$sdev[1:factors] )
+#   rotated <- varimax ( coefficients ) $ loadings # execute this line if rotation is wanted
+  rotated <-  coefficients # output the loadings without rotation
+  fct.ss  <- apply( rotated, 2 , function (x) sum (x^2) )
+  pct.ss  <- fct.ss / sum (eig)
+  cum.ss  <- cumsum ( pct.ss )
+  ss <- t ( cbind ( fct.ss , pct.ss, cum.ss ) )
+  colnames(rotated) <-c("Factor 1","Factor 2")
+  colnames(ss) <- colnames(rotated)
+  rownames(ss) <- c("Var explained", "Prop of var expl", "Cum percent of var expl")
+  out <- list(rotated,ss)
+  return (out)
+}
+
+```
+
+
+
+
+
+
+
+
